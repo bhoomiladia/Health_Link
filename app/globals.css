@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%; /* A blue */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%; /* A lighter gray/blue */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 142.1 76.2% 36.3%; /* A green */
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%; /* A red */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+
+    --radius: 0.75rem;
+
+    /* Custom Palette */
+    --color-primary-50: #EFF6FF; /* Lightest Blue */
+    --color-primary-100: #DBEAFE;
+    --color-primary-200: #BFDBFE;
+    --color-primary-300: #93C5FD;
+    --color-primary-400: #60A5FA;
+    --color-primary-500: #3B82F6; /* Calming Blue */
+    --color-primary-600: #2563EB;
+    --color-primary-700: #1D4ED8;
+    --color-primary-800: #1E40AF;
+    --color-primary-900: #1E3A8A; /* Dark Blue */
+
+    --color-secondary-50: #F5F3FF; /* Lightest Purple */
+    --color-secondary-100: #EDE9FE;
+    --color-secondary-200: #DDD6FE;
+    --color-secondary-300: #C4B5FD;
+    --color-secondary-400: #A78BFA;
+    --color-secondary-500: #8B5CF6;
+    --color-secondary-600: #7C3AED; /* Stronger Purple */
+    --color-secondary-700: #6D28D9;
+    --color-secondary-800: #5B21B6;
+    --color-secondary-900: #4C1D95; /* Dark Purple */
+
+    --color-accent-50: #ECFDF5; /* Lightest Green */
+    --color-accent-100: #D1FAE5;
+    --color-accent-200: #A7F3D0;
+    --color-accent-300: #6EE7B7;
+    --color-accent-400: #34D399;
+    --color-accent-500: #10B981; /* Soft Green */
+    --color-accent-600: #059669;
+    --color-accent-700: #047857;
+    --color-accent-800: #065F46;
+    --color-accent-900: #064E40; /* Dark Green */
+
+    --color-destructive-50: #FEF2F2; /* Lightest Red */
+    --color-destructive-100: #FEE2E2;
+    --color-destructive-200: #FECACA;
+    --color-destructive-300: #FCA5A5;
+    --color-destructive-400: #F87171;
+    --color-destructive-500: #EF4444;
+    --color-destructive-600: #DC2626;
+    --color-destructive-700: #B91C1C;
+    --color-destructive-800: #991B1B;
+    --color-destructive-900: #7F1D1D; /* Dark Red */
+  }
+}
+
+@layer base {
+  body {
+    @apply text-foreground bg-background;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  * {
+    @apply border-border;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary-200));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary-300));
+}
+
+/* Smooth animations */
+* {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
