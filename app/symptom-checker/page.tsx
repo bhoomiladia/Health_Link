@@ -17,36 +17,24 @@ const [symptoms, setSymptoms] = useState("")
 const [selectedLanguage, setSelectedLanguage] = useState("English")
 const [results, setResults] = useState<any>(null)
 const [loading, setLoading] = useState(false)
-
 const languages = ["English", "Hindi", "Bengali", "Tamil", "Telugu", "Marathi", "Gujarati"]
 
 const handleCheckSymptoms = async (e: React.FormEvent) => {
   e.preventDefault()
   setLoading(true)
-  setResults(null) // Clear previous results
+  setResults(null)
 
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 2000))
-
-  setResults({
-    condition: "Common Cold / Flu-like Illness",
-    confidence: "High (85%)",
-    firstAid: [
-      "Rest adequately.",
-      "Stay hydrated with water, clear broths, or herbal teas.",
-      "Use over-the-counter pain relievers (e.g., paracetamol) for fever and body aches.",
-      "Gargle with warm salt water for sore throat.",
-      "Consider steam inhalation for nasal congestion.",
-    ],
-    whenToSeeDoctor: [
-      "Symptoms worsen or do not improve after 7-10 days.",
-      "Difficulty breathing or shortness of breath.",
-      "Persistent high fever (above 102°F or 39°C).",
-      "Severe sore throat, headache, or sinus pain.",
-      "Chest pain or pressure.",
-      "Chronic medical conditions that might be exacerbated.",
-    ],
+  const response = await fetch('/api/symptom-checker', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      symptoms,
+      language: selectedLanguage
+    }),
   })
+
+  const data = await response.json()
+  setResults(data)
   setLoading(false)
 }
 
