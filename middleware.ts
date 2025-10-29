@@ -5,30 +5,31 @@ export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
 
-    // Allow public routes (login, signup, API auth)
+    // ✅ Allow public routes (auth pages, home, API routes)
     if (
       pathname.startsWith("/api/auth") ||
+      pathname === "/" ||
       pathname === "/login" ||
       pathname === "/signup" ||
-      pathname === "/register" ||
-      pathname === "/"
+      pathname === "/register"
     ) {
       return NextResponse.next();
     }
 
-    // If user is not authorized, redirect to login
+    // ✅ If token missing, redirect to login
     if (!req.nextauth?.token) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("callbackUrl", req.url);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Otherwise continue
+    // ✅ Allow the request
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token, // only authorize if token exists
+      // Token is automatically added by NextAuth
+      authorized: ({ token }) => !!token,
     },
   }
 );
