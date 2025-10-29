@@ -67,22 +67,24 @@ export default function ProfilePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editData),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        toast.success("Profile updated successfully!")
-        setUser(result.user)
-        setIsEditing(false)
-      } else {
-        toast.error(result.error || "Failed to update profile")
-      }
+      });
+  
+      if (!response.ok) throw new Error("Failed to update profile");
+  
+      const result = await response.json();
+  
+      // ✅ Immediately update state with latest data
+      setUser(result.user);
+      setEditData(result.user);
+      setIsEditing(false);
+  
+      toast.success("Profile updated successfully!");
     } catch (error) {
-      toast.error("Failed to update profile")
-      console.error("Error updating profile:", error)
+      toast.error("Failed to update profile");
+      console.error("Error updating profile:", error);
     }
-  }
+  };
+  
 
   const handleCancel = () => {
     setEditData(user || {})
