@@ -67,17 +67,15 @@ export default function ProfilePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editData),
+        credentials: "include", // ✅ Important: send cookies/session
       });
   
       if (!response.ok) throw new Error("Failed to update profile");
   
       const result = await response.json();
-  
-      // ✅ Immediately update state with latest data
       setUser(result.user);
       setEditData(result.user);
       setIsEditing(false);
-  
       toast.success("Profile updated successfully!");
     } catch (error) {
       toast.error("Failed to update profile");
