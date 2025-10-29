@@ -25,6 +25,7 @@ interface User {
   medications?: string
   upcomingAppointments?: string
   profileCompleted: boolean
+  _id?: string
 }
 
 export default function ProfilePage() {
@@ -37,25 +38,21 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status === "loading") return
-    
     if (!session) {
       router.push("/login")
       return
     }
-    
     fetchUserData()
   }, [session, status, router])
 
   const fetchUserData = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch("/api/user/profile")
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-        setEditData(userData)
-      } else {
-        throw new Error("Failed to fetch user data")
-      }
+      if (!response.ok) throw new Error("Failed to fetch user data")
+      const userData = await response.json()
+      setUser(userData)
+      setEditData(userData)
     } catch (error) {
       toast.error("Failed to load profile data")
       console.error("Error fetching user data:", error)
@@ -72,15 +69,14 @@ export default function ProfilePage() {
         body: JSON.stringify(editData),
       })
 
+      const result = await response.json()
+
       if (response.ok) {
-        const updatedUser = await response.json()
-        setUser(updatedUser.user || { ...user, ...editData })
-        setIsEditing(false)
         toast.success("Profile updated successfully!")
-        // Refresh the data
-        fetchUserData()
+        setUser(result.user)
+        setIsEditing(false)
       } else {
-        throw new Error("Failed to update profile")
+        toast.error(result.error || "Failed to update profile")
       }
     } catch (error) {
       toast.error("Failed to update profile")
@@ -102,7 +98,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">Loading...</div>
+          <p className="text-gray-600">Loading your profile...</p>
         </main>
         <Footer />
       </div>
@@ -114,7 +110,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">Failed to load profile data</div>
+          <p className="text-gray-600">Unable to load your profile.</p>
         </main>
         <Footer />
       </div>
@@ -124,10 +120,9 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-
       <main className="flex-1 py-10 px-6 container mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-900">My Profile</h1>
+          <h1 className="text-3xl font-bold text-primary">My Profile</h1>
           {!isEditing ? (
             <div className="flex gap-2">
               {!user.profileCompleted && (
@@ -135,18 +130,12 @@ export default function ProfilePage() {
                   Complete Medical Info
                 </Button>
               )}
-              <Button onClick={() => setIsEditing(true)}>
-                Edit Profile
-              </Button>
+              <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
             </div>
           ) : (
             <div className="flex gap-2">
-              <Button onClick={handleCancel} variant="outline">
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>
-                Save Changes
-              </Button>
+              <Button onClick={handleCancel} variant="outline">Cancel</Button>
+              <Button onClick={handleSave}>Save</Button>
             </div>
           )}
         </div>
@@ -159,7 +148,7 @@ export default function ProfilePage() {
             <TabsTrigger value="medications">Medications</TabsTrigger>
           </TabsList>
 
-          {/* Personal Information Tab */}
+          {/* PERSONAL INFO */}
           <TabsContent value="personal">
             <Card>
               <CardHeader>
@@ -168,59 +157,29 @@ export default function ProfilePage() {
               <CardContent className="space-y-4">
                 {isEditing ? (
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
-                      <Input
-                        id="name"
-                        value={editData.name || ""}
-                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="age">Age</Label>
-                      <Input
-                        id="age"
-                        type="number"
-                        value={editData.age || ""}
-                        onChange={(e) => setEditData({ ...editData, age: parseInt(e.target.value) || undefined })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gender">Gender</Label>
-                      <Input
-                        id="gender"
-                        value={editData.gender || ""}
-                        onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
-                        placeholder="Male / Female / Other"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bloodGroup">Blood Group</Label>
-                      <Input
-                        id="bloodGroup"
-                        value={editData.bloodGroup || ""}
-                        onChange={(e) => setEditData({ ...editData, bloodGroup: e.target.value })}
-                        placeholder="O+, A-, etc."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone</Label>
-                      <Input
-                        id="phone"
-                        value={editData.phone || ""}
-                        onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
-                        placeholder="+91 9876543210"
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        value={editData.address || ""}
-                        onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-                        placeholder="City, State, Country"
-                      />
-                    </div>
+                    {[
+                      { id: "name", label: "Full Name", type: "text" },
+                      { id: "age", label: "Age", type: "number" },
+                      { id: "gender", label: "Gender", type: "text" },
+                      { id: "bloodGroup", label: "Blood Group", type: "text" },
+                      { id: "phone", label: "Phone", type: "text" },
+                      { id: "address", label: "Address", type: "text", full: true },
+                    ].map((field) => (
+                      <div
+                        key={field.id}
+                        className={`space-y-2 ${field.full ? "md:col-span-2" : ""}`}
+                      >
+                        <Label htmlFor={field.id}>{field.label}</Label>
+                        <Input
+                          id={field.id}
+                          type={field.type}
+                          value={(editData as any)[field.id] || ""}
+                          onChange={(e) =>
+                            setEditData({ ...editData, [field.id]: e.target.value })
+                          }
+                        />
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="space-y-2 text-gray-700">
@@ -237,7 +196,7 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
 
-          {/* Medical History Tab */}
+          {/* MEDICAL HISTORY */}
           <TabsContent value="medical">
             <Card>
               <CardHeader>
@@ -245,16 +204,14 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {isEditing ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="medicalHistory">Medical History</Label>
-                    <Textarea
-                      id="medicalHistory"
-                      value={editData.medicalHistory || ""}
-                      onChange={(e) => setEditData({ ...editData, medicalHistory: e.target.value })}
-                      placeholder="Past conditions, surgeries, chronic illnesses..."
-                      rows={4}
-                    />
-                  </div>
+                  <Textarea
+                    value={editData.medicalHistory || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, medicalHistory: e.target.value })
+                    }
+                    placeholder="Past conditions, surgeries, chronic illnesses..."
+                    rows={4}
+                  />
                 ) : (
                   <p>{user.medicalHistory || "No medical history provided yet."}</p>
                 )}
@@ -262,7 +219,7 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
 
-          {/* Appointments Tab */}
+          {/* APPOINTMENTS */}
           <TabsContent value="appointments">
             <Card>
               <CardHeader>
@@ -270,24 +227,22 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {isEditing ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="upcomingAppointments">Upcoming Appointments</Label>
-                    <Textarea
-                      id="upcomingAppointments"
-                      value={editData.upcomingAppointments || ""}
-                      onChange={(e) => setEditData({ ...editData, upcomingAppointments: e.target.value })}
-                      placeholder="Doctor names, dates, hospitals..."
-                      rows={4}
-                    />
-                  </div>
+                  <Textarea
+                    value={editData.upcomingAppointments || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, upcomingAppointments: e.target.value })
+                    }
+                    placeholder="Doctor names, dates, hospitals..."
+                    rows={4}
+                  />
                 ) : (
-                  <p>{user.upcomingAppointments || "No upcoming appointments scheduled."}</p>
+                  <p>{user.upcomingAppointments || "No upcoming appointments."}</p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Medications Tab */}
+          {/* MEDICATIONS */}
           <TabsContent value="medications">
             <Card>
               <CardHeader>
@@ -295,16 +250,14 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 {isEditing ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="medications">Current Medications</Label>
-                    <Textarea
-                      id="medications"
-                      value={editData.medications || ""}
-                      onChange={(e) => setEditData({ ...editData, medications: e.target.value })}
-                      placeholder="Medication names, dosages, frequencies..."
-                      rows={4}
-                    />
-                  </div>
+                  <Textarea
+                    value={editData.medications || ""}
+                    onChange={(e) =>
+                      setEditData({ ...editData, medications: e.target.value })
+                    }
+                    placeholder="Medication names, dosages, frequencies..."
+                    rows={4}
+                  />
                 ) : (
                   <p>{user.medications || "No medications listed."}</p>
                 )}
@@ -313,7 +266,6 @@ export default function ProfilePage() {
           </TabsContent>
         </Tabs>
       </main>
-
       <Footer />
     </div>
   )
