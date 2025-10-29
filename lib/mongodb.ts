@@ -5,7 +5,19 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI
-const options = {}
+
+// Add proper connection options for production
+const options = {
+  // These options help with Vercel/Netlify deployments
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  // For MongoDB Atlas, add SSL/TLS options
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  retryWrites: true,
+//   w: 'majority'
+}
 
 let client
 let clientPromise: Promise<MongoClient>
