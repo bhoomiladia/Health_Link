@@ -5,9 +5,29 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI
-const options = {tls:false};
 
-let client
+// Fixed options - MongoDB Atlas requires TLS
+const options = {
+  // TLS/SSL configuration (required for MongoDB Atlas)
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  
+  // Connection timeouts
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 30000,
+  connectTimeoutMS: 10000,
+  
+  // Connection pool settings
+  maxPoolSize: 10,
+  minPoolSize: 0,
+  maxIdleTimeMS: 25000,
+  
+  // Retry settings
+  retryWrites: true,
+  retryReads: true,
+}
+
+let client: MongoClient
 let clientPromise: Promise<MongoClient>
 
 if (process.env.NODE_ENV === "development") {
