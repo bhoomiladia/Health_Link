@@ -12,7 +12,6 @@ import { HospitalCard } from "@/components/HospitalCard";
 import { reverseGeocodeNominatim, geocodeCityNominatim } from "@/utils/location";
 import { bboxFromCenter, fetchHospitalsByBBox, OsmHospital } from "@/utils/overpass";
 import { LocateFixed, Search, MapPin } from "lucide-react";
-import { LocationPopup } from "@/components/LocationPopup";
 import { useRouter } from "next/navigation";
 
 export default function FindHospitalsPage() {
@@ -24,7 +23,8 @@ export default function FindHospitalsPage() {
   const [stateName, setStateName] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [locationDetected, setLocationDetected] = useState(false);
-  const [showLocationPopup, setShowLocationPopup] = useState(false);
+  const [showConsentPanel, setShowConsentPanel] = useState(false);
+  const [permissionChoice, setPermissionChoice] = useState<string | null>(null);
 
   // Manual city input (debounced)
   const [cityInput, setCityInput] = useState("");
@@ -85,11 +85,12 @@ export default function FindHospitalsPage() {
     };
   }, [cityInput]);
 
-  // Show location popup once per login
+  // Read persisted permission choice (optional future use)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const asked = localStorage.getItem('locationPermissionAsked');
-    if (!asked) setShowLocationPopup(true);
+    const storedAlways = localStorage.getItem('locationPermission');
+    const storedSession = sessionStorage.getItem('locationPermission');
+    setPermissionChoice(storedAlways || storedSession);
   }, []);
 
   // Whenever lat/lon change, fetch hospitals
@@ -97,7 +98,7 @@ export default function FindHospitalsPage() {
     if (lat != null && lon != null) fetchHospitals();
   }, [lat, lon, fetchHospitals]);
 
-  const handleLiveLocation = async () => {
+  const runLiveLocation = async () => {
     if (!navigator.geolocation) return;
     setLoadingLocation(true);
     navigator.geolocation.getCurrentPosition(
@@ -120,17 +121,34 @@ export default function FindHospitalsPage() {
     );
   };
 
-  const onAllowLocation = async () => {
-    if (typeof window !== 'undefined') localStorage.setItem('locationPermissionAsked', 'true');
-    setShowLocationPopup(false);
-    await handleLiveLocation();
-    // auto fetch after detection (will run via lat/lon effect)
+  const openConsent = () => {
+    setShowConsentPanel((v) => !v || permissionChoice == null);
   };
 
-  const onDenyLocation = () => {
-    if (typeof window !== 'undefined') localStorage.setItem('locationPermissionAsked', 'true');
-    setShowLocationPopup(false);
+  const choosePermission = async (choice: 'never' | 'session' | 'always') => {
+    setPermissionChoice(choice);
+    if (choice === 'never') {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('locationPermission', 'never');
+      }
+      setShowConsentPanel(false);
+      return;
+    }
+    if (choice === 'session') {
+      if (typeof window !== 'undefined') sessionStorage.setItem('locationPermission', 'session');
+      setShowConsentPanel(false);
+      await runLiveLocation();
+      return;
+    }
+    if (choice === 'always') {
+      if (typeof window !== 'undefined') localStorage.setItem('locationPermission', 'always');
+      setShowConsentPanel(false);
+      await runLiveLocation();
+      return;
+    }
   };
+
+  // (removed: onAllowLocation / onDenyLocation from previous modal flow)
 
   const handleBook = async (h: OsmHospital) => {
     try {
@@ -164,7 +182,7 @@ export default function FindHospitalsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <Button className="bg-primary-600 hover:bg-primary-700" onClick={handleLiveLocation} disabled={loadingLocation}>
+              <Button className="bg-primary-600 hover:bg-primary-700" onClick={openConsent} disabled={loadingLocation}>
                 <LocateFixed className="h-4 w-4 mr-2" />
                 {loadingLocation ? "Getting Live Location..." : "Get Live Location"}
               </Button>
@@ -213,7 +231,33 @@ export default function FindHospitalsPage() {
           </div>
         )}
       </main>
-      <LocationPopup open={showLocationPopup} onAllow={onAllowLocation} onDeny={onDenyLocation} />
+      {/* Consent panel left side */}
+      {showConsentPanel && (
+        <div className="fixed left-4 top-24 z-40 w-80">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-base">Location Access</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-gray-600">Choose how HealthLink can use your location.</p>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={permissionChoice === 'never'} onChange={() => choosePermission('never')} />
+                  Never allow
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={permissionChoice === 'session'} onChange={() => choosePermission('session')} />
+                  Allow while using this site
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={permissionChoice === 'always'} onChange={() => choosePermission('always')} />
+                  Allow always
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       <Footer />
     </div>
   );

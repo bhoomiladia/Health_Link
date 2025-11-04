@@ -41,19 +41,21 @@ export default function DashboardPage() {
         setUser(userData)
       } else {
         // If profile API fails, use session data
+        const userFromSession = (session && session.user) ? session.user as any : null
         setUser({
-          name: session.user?.name || "User",
-          email: session.user?.email || "",
-          profileCompleted: session.user?.profileCompleted || false
+          name: (userFromSession && userFromSession.name) || "User",
+          email: (userFromSession && userFromSession.email) || "",
+          profileCompleted: (userFromSession && userFromSession.profileCompleted) || false
         })
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
       // Fallback to session data
+      const userFromSession = (session && session.user) ? session.user as any : null
       setUser({
-        name: session?.user?.name || "User",
-        email: session?.user?.email || "",
-        profileCompleted: session?.user?.profileCompleted || false
+        name: (userFromSession && userFromSession.name) || "User",
+        email: (userFromSession && userFromSession.email) || "",
+        profileCompleted: (userFromSession && userFromSession.profileCompleted) || false
       })
     } finally {
       setIsLoading(false)
@@ -129,6 +131,22 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
+          {/* Nearby Hospitals */}
+          <Card className="border-primary-200 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader>
+              <CardTitle className="text-xl text-primary-900 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-secondary-600" /> 
+                Nearby Hospitals
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <p className="text-gray-600">Find hospitals and clinics near you.</p>
+              <Button asChild className="bg-secondary-600 hover:bg-secondary-700 text-white">
+                <Link href="/find-hospitals">Find Hospitals</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Token Management */}
           <Card className="border-primary-200 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader>
@@ -141,22 +159,6 @@ export default function DashboardPage() {
               <p className="text-gray-600">Book tokens and track your queue position.</p>
               <Button asChild className="bg-primary-600 hover:bg-primary-700 text-white">
                 <Link href="/token">Manage Tokens</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Nearby Hospitals */}
-          <Card className="border-primary-200 shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-xl text-primary-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-secondary-600" /> 
-                Nearby Hospitals
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <p className="text-gray-600">Find hospitals and clinics near you.</p>
-              <Button asChild className="bg-secondary-600 hover:bg-secondary-700 text-white">
-                <Link href="/nearby-hospitals">Find Hospitals</Link>
               </Button>
             </CardContent>
           </Card>
