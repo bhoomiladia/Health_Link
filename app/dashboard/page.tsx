@@ -19,6 +19,7 @@ interface UserData {
 export default function DashboardPage() {
   const [user, setUser] = useState<UserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [upcoming, setUpcoming] = useState<number>(0)
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -32,6 +33,28 @@ export default function DashboardPage() {
     
     fetchUserData()
   }, [session, status, router])
+
+  // Listen for appointment updates from Token System (top-level effect)
+  useEffect(() => {
+    const read = () => {
+      try {
+        const v = parseInt(localStorage.getItem('upcomingAppointments') || '0', 10) || 0
+        setUpcoming(v)
+      } catch {
+        setUpcoming(0)
+      }
+    }
+    read()
+    const handler = () => read()
+    if (typeof window !== 'undefined') {
+      window.addEventListener('hl:appointments:update', handler)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('hl:appointments:update', handler)
+      }
+    }
+  }, [])
 
   const fetchUserData = async () => {
     try {
@@ -215,7 +238,7 @@ export default function DashboardPage() {
         {/* Quick Stats Section (Optional) */}
         <div className="mt-12 grid md:grid-cols-3 gap-6">
           <Card className="text-center p-6">
-            <div className="text-2xl font-bold text-primary-600">0</div>
+            <div className="text-2xl font-bold text-primary-600">{upcoming}</div>
             <div className="text-gray-600">Upcoming Appointments</div>
           </Card>
           <Card className="text-center p-6">

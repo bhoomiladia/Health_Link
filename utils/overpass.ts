@@ -8,6 +8,7 @@ export interface OsmHospital {
   lat?: number;
   lon?: number;
   status?: "Available" | "Busy";
+  area?: string;
 }
 
 function uniqueKey(h: OsmHospital) {
@@ -66,6 +67,7 @@ out center;`;
     const address = addrParts.join(", ");
     const city = tags["addr:city"]; 
     const state = tags["addr:state"]; 
+    const area = tags["addr:suburb"] || tags["addr:neighbourhood"] || tags["addr:city"];
     const phone = tags.phone || tags["contact:phone"] || undefined;
     const lat = el.lat ?? el.center?.lat;
     const lon = el.lon ?? el.center?.lon;
@@ -75,6 +77,7 @@ out center;`;
       address: address || undefined,
       city,
       state,
+      area,
       phone,
       lat,
       lon,

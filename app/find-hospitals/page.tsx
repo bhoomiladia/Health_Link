@@ -23,8 +23,9 @@ export default function FindHospitalsPage() {
   const [stateName, setStateName] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [locationDetected, setLocationDetected] = useState(false);
-  const [showConsentPanel, setShowConsentPanel] = useState(false);
-  const [permissionChoice, setPermissionChoice] = useState<string | null>(null);
+  const [street, setStreet] = useState("");
+  const [zip, setZip] = useState("");
+  // removed custom consent panel
 
   // Manual city input (debounced)
   const [cityInput, setCityInput] = useState("");
@@ -50,7 +51,13 @@ export default function FindHospitalsPage() {
         const wider = bboxFromCenter(lat, lon, 12);
         list = await fetchHospitalsByBBox(wider);
       }
-      setHospitals(list ?? []);
+      const safe = list ?? [];
+      setHospitals(safe);
+      // persist a minimal list for Token page dropdown
+      try {
+        const minimal = safe.map(h => ({ id: h.id, name: h.name, address: h.address, city: h.city, state: h.state }));
+        localStorage.setItem('hospitalsLastList', JSON.stringify(minimal));
+      } catch {}
     } catch {
       setHospitals([]);
     } finally {
@@ -85,13 +92,7 @@ export default function FindHospitalsPage() {
     };
   }, [cityInput]);
 
-  // Read persisted permission choice (optional future use)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const storedAlways = localStorage.getItem('locationPermission');
-    const storedSession = sessionStorage.getItem('locationPermission');
-    setPermissionChoice(storedAlways || storedSession);
-  }, []);
+  // no custom consent persistence
 
   // Whenever lat/lon change, fetch hospitals
   useEffect(() => {
@@ -121,50 +122,41 @@ export default function FindHospitalsPage() {
     );
   };
 
-  const openConsent = () => {
-    setShowConsentPanel((v) => !v || permissionChoice == null);
-  };
-
-  const choosePermission = async (choice: 'never' | 'session' | 'always') => {
-    setPermissionChoice(choice);
-    if (choice === 'never') {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('locationPermission', 'never');
-      }
-      setShowConsentPanel(false);
-      return;
-    }
-    if (choice === 'session') {
-      if (typeof window !== 'undefined') sessionStorage.setItem('locationPermission', 'session');
-      setShowConsentPanel(false);
-      await runLiveLocation();
-      return;
-    }
-    if (choice === 'always') {
-      if (typeof window !== 'undefined') localStorage.setItem('locationPermission', 'always');
-      setShowConsentPanel(false);
-      await runLiveLocation();
-      return;
-    }
-  };
+  // removed consent panel handlers
 
   // (removed: onAllowLocation / onDenyLocation from previous modal flow)
 
-  const handleBook = async (h: OsmHospital) => {
+  const handleBook = (h: OsmHospital) => {
     try {
-      const res = await fetch('/api/book-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'anonymous', hospital: h.name, city }),
-      });
-      if (res.ok) {
-        alert('Token booked successfully');
-      } else {
-        alert('Failed to book token');
+      const selected = {
+        id: h.id,
+        name: h.name,
+        address: [h.address, h.city, h.state].filter(Boolean).join(', '),
+      };
+      localStorage.setItem('selectedHospital', JSON.stringify(selected));
+    } catch {}
+    router.push('/token-system');
+  };
+
+  const handleGetCoordsForAddress = async () => {
+    const q = [street, cityInput || city, stateName ?? "", zip].filter(Boolean).join(", ");
+    if (!q) return;
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const item = data[0];
+        const la = parseFloat(item.lat);
+        const lo = parseFloat(item.lon);
+        if (!Number.isNaN(la) && !Number.isNaN(lo)) {
+          setLat(la);
+          setLon(lo);
+          setAddress(item.display_name ?? address);
+        }
       }
-    } catch {
-      alert('Failed to book token');
-    }
+    } catch {}
   };
 
   return (
@@ -182,7 +174,7 @@ export default function FindHospitalsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <Button className="bg-primary-600 hover:bg-primary-700" onClick={openConsent} disabled={loadingLocation}>
+              <Button className="bg-primary-600 hover:bg-primary-700" onClick={runLiveLocation} disabled={loadingLocation}>
                 <LocateFixed className="h-4 w-4 mr-2" />
                 {loadingLocation ? "Getting Live Location..." : "Get Live Location"}
               </Button>
@@ -196,13 +188,27 @@ export default function FindHospitalsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
+                <Label htmlFor="street">Street Address</Label>
+                <Input id="street" placeholder="e.g. CM Shaw Road" value={street} onChange={(e) => setStreet(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="city">City</Label>
                 <Input id="city" placeholder="e.g. Mumbai" value={cityInput} onChange={(e) => setCityInput(e.target.value)} />
               </div>
               <div className="grid gap-2">
-                <Label>Detected City / State</Label>
-                <Input readOnly value={[city, stateName ?? ""].filter(Boolean).join(", ")} placeholder="—" />
+                <Label htmlFor="state">State</Label>
+                <Input id="state" placeholder="e.g. Maharashtra" value={stateName ?? ""} onChange={(e) => setStateName(e.target.value)} />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="zip">ZIP Code</Label>
+                <Input id="zip" placeholder="PIN" value={zip} onChange={(e) => setZip(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              <Button variant="outline" onClick={handleGetCoordsForAddress}>
+                <Search className="h-4 w-4 mr-2" /> Get Coordinates for Address
+              </Button>
             </div>
 
             <div className="mt-4 text-sm text-gray-700">
@@ -220,44 +226,35 @@ export default function FindHospitalsPage() {
         ) : hospitals.length === 0 ? (
           <p className="text-gray-600">No hospitals found.</p>
         ) : (
-          <div className="space-y-4">
-            {hospitals.map((h) => (
-              <HospitalCard
-                key={h.id}
-                data={{ id: h.id, name: h.name, address: h.address, city: h.city, state: h.state, phone: h.phone, status: h.status }}
-                onBook={() => handleBook(h)}
-              />
-            ))}
-          </div>
+          (() => {
+            const groups = new Map<string, OsmHospital[]>();
+            for (const h of hospitals) {
+              const key = (h.area || h.city || 'Other Areas').toString();
+              if (!groups.has(key)) groups.set(key, []);
+              groups.get(key)!.push(h);
+            }
+            return (
+              <div className="space-y-8">
+                {Array.from(groups.entries()).map(([area, list]) => (
+                  <section key={area}>
+                    <h3 className="text-xl font-semibold text-primary-800 mb-3">{area}</h3>
+                    <div className="space-y-4">
+                      {list.map((h) => (
+                        <HospitalCard
+                          key={h.id}
+                          data={{ id: h.id, name: h.name, address: h.address, city: h.city, state: h.state, phone: h.phone, status: h.status }}
+                          onBook={() => handleBook(h)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            );
+          })()
         )}
       </main>
-      {/* Consent panel left side */}
-      {showConsentPanel && (
-        <div className="fixed left-4 top-24 z-40 w-80">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-base">Location Access</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-gray-600">Choose how HealthLink can use your location.</p>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={permissionChoice === 'never'} onChange={() => choosePermission('never')} />
-                  Never allow
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={permissionChoice === 'session'} onChange={() => choosePermission('session')} />
-                  Allow while using this site
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={permissionChoice === 'always'} onChange={() => choosePermission('always')} />
-                  Allow always
-                </label>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* custom consent panel removed as requested */}
       <Footer />
     </div>
   );
