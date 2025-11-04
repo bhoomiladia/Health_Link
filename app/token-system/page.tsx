@@ -1,43 +1,31 @@
-"use client";
-
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useSearchParams, useRouter } from "next/navigation";
+import TokenClient from "./TokenClient";
+import React, { Suspense } from "react";
 
-export default function TokenSystemPage() {
-  const params = useSearchParams();
-  const router = useRouter();
-  const name = params.get("name") || params.get("hospital") || "Unknown Hospital";
-  const id = params.get("id") || undefined;
-  const address = params.get("address") || undefined;
-
-  const book = () => {
-    alert(`Token booked for ${name}`);
-    router.push("/dashboard");
-  };
-
+export default function TokenSystemPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ name?: string; hospital?: string; id?: string; address?: string }>
+}) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-xl">Token System</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-gray-700">Booking token for:</p>
-              <p className="text-lg font-semibold text-primary-900">{name}</p>
-              {address && <p className="text-sm text-gray-600">{address}</p>}
-              {id && <p className="text-xs text-gray-500">ID: {id}</p>}
-            </div>
-            <Button className="bg-primary-600 hover:bg-primary-700 text-white" onClick={book}>Confirm Booking</Button>
-          </CardContent>
-        </Card>
+        <Suspense fallback={<div className="max-w-2xl mx-auto">Loading…</div>}>
+          {/* unwrap the searchParams in a client boundary */}
+          <ClientParams searchParams={searchParams} />
+        </Suspense>
       </main>
       <Footer />
     </div>
   );
+}
+
+function ClientParams({ searchParams }: { searchParams: Promise<{ name?: string; hospital?: string; id?: string; address?: string }>}) {
+  const p = React.use(searchParams as any) as { name?: string; hospital?: string; id?: string; address?: string };
+  const name = p.name || p.hospital || "Unknown Hospital";
+  const id = p.id;
+  const address = p.address;
+  return <TokenClient name={name} id={id} address={address} />;
 }
