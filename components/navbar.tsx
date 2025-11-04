@@ -27,7 +27,7 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <NavLink href="/symptom-checker">Symptom Checker</NavLink>
-            <NavLink href="/nearby-hospitals">Find Hospitals</NavLink>
+            <NavLink href="/find-hospitals">Find Hospitals</NavLink>
             <NavLink href="/token">Token System</NavLink>
             <NavLink href="/dashboard">Dashboard</NavLink>
           </div>
@@ -76,7 +76,7 @@ export default function Navbar() {
           <div className="md:hidden py-4 border-t border-primary-100">
             <div className="flex flex-col space-y-4">
               <NavLink href="/symptom-checker" mobile>Symptom Checker</NavLink>
-              <NavLink href="/nearby-hospitals" mobile>Find Hospitals</NavLink>
+              <NavLink href="/find-hospitals" mobile>Find Hospitals</NavLink>
               <NavLink href="/token" mobile>Token System</NavLink>
               <NavLink href="/dashboard" mobile>Dashboard</NavLink>
 
